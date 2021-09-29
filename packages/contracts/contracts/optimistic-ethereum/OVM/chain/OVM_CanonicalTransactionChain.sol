@@ -417,10 +417,7 @@ contract OVM_CanonicalTransactionChain is iOVM_CanonicalTransactionChain, Lib_Ad
             "Function can only be called by the Sequencer."
         );
 
-        require(
-            numContexts > 0,
-            "Must provide at least one batch context."
-        );
+        require( numContexts > 0, "Must provide at least one batch context." );
 
         require(
             totalElementsToAppend > 0,
@@ -970,16 +967,18 @@ contract OVM_CanonicalTransactionChain is iOVM_CanonicalTransactionChain, Lib_Ad
             );
         }
 
-        // Sequencer cannot submit contexts which are more than the force inclusion period old.
-        require(
-            _firstContext.timestamp + forceInclusionPeriodSeconds >= block.timestamp,
-            "Context timestamp too far in the past."
-        );
+        // Sequencer cannot submit contexts with sequenced transactions which are more than the force inclusion period old.
+        if (_firstContext.numSequencedTransactions > 0) {
+            require(
+                _firstContext.timestamp + forceInclusionPeriodSeconds >= block.timestamp,
+                "Context timestamp too far in the past."
+            );
 
-        require(
-            _firstContext.blockNumber + forceInclusionPeriodBlocks >= block.number,
-            "Context block number too far in the past."
-        );
+            require(
+                _firstContext.blockNumber + forceInclusionPeriodBlocks >= block.number,
+                "Context block number too far in the past."
+            );
+        }
     }
 
     /**
@@ -1003,11 +1002,13 @@ contract OVM_CanonicalTransactionChain is iOVM_CanonicalTransactionChain, Lib_Ad
 
             // If the force inclusion period has passed for an enqueued transaction, it MUST be the
             // next chain element.
+        if (_context.numSequencedTransactions > 0) {
             require(
                 block.timestamp < nextQueueElement.timestamp + forceInclusionPeriodSeconds,
                 // solhint-disable-next-line max-line-length
                 "Previously enqueued batches have expired and must be appended before a new sequencer batch."
             );
+        }
 
             // Just like sequencer transaction times must be increasing relative to each other,
             // We also require that they be increasing relative to any interspersed queue elements.
